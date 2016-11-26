@@ -1,0 +1,55 @@
+# Your keymap
+#
+# Atom keymaps work similarly to style sheets. Just as style sheets use
+# selectors to apply styles to elements, Atom keymaps use selectors to associate
+# keystrokes with events in specific contexts. Unlike style sheets however,
+# each selector can only be declared once.
+#
+# You can create a new keybinding in this file by typing "key" and then hitting
+# tab.
+#
+# Here's an example taken from Atom's built-in keymap:
+#
+# 'atom-text-editor':
+#   'enter': 'editor:newline'
+#
+# 'atom-workspace':
+#   'ctrl-shift-p': 'core:move-up'
+#   'ctrl-p': 'core:move-down'
+#
+# You can find more information about keymaps in these guides:
+# * http://flight-manual.atom.io/using-atom/sections/basic-customization/#_customizing_keybindings
+# * http://flight-manual.atom.io/behind-atom/sections/keymaps-in-depth/
+#
+# If you're having trouble with your keybindings not working, try the
+# Keybinding Resolver: `Cmd+.` on macOS and `Ctrl+.` on other platforms. See the
+# Debugging Guide for more information:
+# * http://flight-manual.atom.io/hacking-atom/sections/debugging/#check-the-keybindings
+#
+# This file uses CoffeeScript Object Notation (CSON).
+# If you are unfamiliar with CSON, you can read more about it in the
+# Atom Flight Manual:
+# http://flight-manual.atom.io/using-atom/sections/basic-customization/#_cson
+#
+'atom-text-editor':
+  'ctrl-h': 'core:backspace'
+  'ctrl-z': 'atomic-emacs:scroll-down'
+  'f4': 'symbols-view:go-to-declaration'
+  'shift-f4': 'symbols-view:return-from-declaration'
+#
+  'f12': 'atom-gtags:get-definitions'
+  'shift-f12': 'atom-gtags:nav-back'
+  'f5': 'atom-gtags:get-references'
+
+# For atom-gtags
+#'atom-workspace':
+#  'alt-1': 'atom-gtags:get-definitions'
+#  'alt-2': 'atom-gtags:get-references'
+#  'alt-3': 'atom-gtags:get-symbols-of-file'
+#  'alt-4': 'atom-gtags:lookup-definitions'
+#  'alt-i': 'atom-gtags:single-file-update'
+#  'alt-w': 'atom-gtags:nav-forward'
+#  'alt-q': 'atom-gtags:nav-back'
+#  'alt-.': 'atom-gtags:pre-position'
+#  'alt-,': 'atom-gtags:next-position'
+#  'ctrl-alt-g': 'atom-gtags:toggle'
