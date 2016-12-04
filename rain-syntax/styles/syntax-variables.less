@@ -7,12 +7,12 @@
 
 // General colors
 @syntax-text-color: @rain-light;
-@syntax-cursor-color: @rain-light;
-@syntax-selection-color: darken(@rain-dark, 40%);
+@syntax-cursor-color: @green;
+@syntax-selection-color: lighten(@rain-dark, 10%);
 @syntax-background-color: @rain-darkest;
 
 // Guide colors
-@syntax-wrap-guide-color: @rain-mid;
+@syntax-wrap-guide-color: @rain-dark;
 @syntax-indent-guide-color: @rain-dark;
 @syntax-invisible-character-color: @rain-dark;
 
@@ -31,3 +31,17 @@
 @syntax-color-added: @green;
 @syntax-color-modified: @orange;
 @syntax-color-removed: @red;
+
+// For language entity colors
+@syntax-color-variable:   @syntax-text-color;
+@syntax-color-constant:   @cyan;
+@syntax-color-property:   @green;
+@syntax-color-value:      @syntax-text-color;
+@syntax-color-function:   @blue;
+@syntax-color-method:     @blue;
+@syntax-color-class:      @purple;
+@syntax-color-keyword:    @blue;
+@syntax-color-tag:        @cyan;
+@syntax-color-attribute:  @green;
+@syntax-color-import:     @orange;
+@syntax-color-snippet:    @red;
