@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-from matplotlib.widgets import Slider, Button
+from matplotlib.widgets import Slider, Button, TextBox
 import csv
 
 #############################
@@ -20,7 +20,7 @@ def callback_time_cut(val):
     update_num_shadow(int(sneighbors.val))
     # plot 121
     lcuttime.set_xdata( [val, val] )
-    lcuttime.set_alpha( alpha_ax )
+    lcuttime.set_alpha( alpha_hm )
     lcutfreq.set_alpha( 0.0 )
     # plot 122
     if plot_mode == last_plot_mode:
@@ -51,7 +51,7 @@ def callback_freq_cut(val):
     #plot 121
     lcutfreq.set_ydata( [freqf, freqf])
     lcuttime.set_alpha( 0.0 )
-    lcutfreq.set_alpha( alpha_ax )
+    lcutfreq.set_alpha( alpha_hm )
     #plot 122
     if plot_mode == last_plot_mode:
         replot_flags = get_replot_flag( val_freq )
@@ -71,8 +71,8 @@ def callback_neighbors(val):
     fig.canvas.draw_idle()
 
 def callback_alpha(val):
-    global alpha_scale
-    alpha_scale = val * val
+    global alpha_neighbors
+    alpha_neighbors = val * val
     replot_shadow( [ True, True ] )
     fig.canvas.draw_idle()
 
@@ -84,13 +84,20 @@ def callback_linlog(event):
     reform_axis()
     fig.canvas.draw_idle()
 
+def callback_sf(text):
+    global sf
+    sf = eval(text)
+    scale_freq = get_scale_freq()
+
+    print( 'sf ', sf)
+
 def update_light():
     if plot_mode == 'freq_cut':
-        update_line( l2, xdata_freq, zdata.T[:,val_freq] )
+        update_line( l2, xdata_time, zdata.T[:,val_freq] )
         update_color( l2, color_freq_light, alpha_freq_light )
         update_marker_color( l2, color_freq_light )
     else:
-        update_line( l2, xdata_time, zdata[:,val_time] )
+        update_line( l2, xdata_freq, zdata[:,val_time] )
         update_color( l2, color_time_light, alpha_time_light )
         update_marker_color( l2, color_time_light )
 
@@ -98,9 +105,9 @@ def update_shadow( replot_flags ):
     for ilh in range(len(replot_flags) ):
         if replot_flags[ilh]:
             if plot_mode == 'freq_cut':
-                update_shadow_ilh( ilh, val_freq, xdata_freq, zdata.T )
+                update_shadow_ilh( ilh, val_freq, xdata_time, zdata.T )
             else:
-                update_shadow_ilh( ilh, val_time, xdata_time, zdata )
+                update_shadow_ilh( ilh, val_time, xdata_freq, zdata )
 
 def update_shadow_ilh( ilh, val, xdata, ydata ):
     shadow_list = get_shadow_list( val, num_lower, num_higher )
@@ -115,11 +122,11 @@ def replot_light( ):
         l2.remove()
     if plot_mode == 'freq_cut':
         col = color_freq_light
-        l2, = ax2.plot( xdata_freq, zdata[val_freq,:], '-o',
+        l2, = ax2.plot( xdata_time, zdata[val_freq,:], '-o',
             	color=col, markerfacecolor=col, markeredgecolor=col, lw=1, ms=2 )
     else:
         col = color_time_light
-        l2, = ax2.plot( xdata_time, zdata[:,val_time], '-o',
+        l2, = ax2.plot( xdata_freq, zdata[:,val_time], '-o',
             	color=col, markerfacecolor=col, markeredgecolor=col, lw=1, ms=2 )
 
     ax2.set_yscale(yscale[linlog])
@@ -137,11 +144,11 @@ def replot_shadow( replot_flags ):
                 l2shadow[ilh] = []
             # Write new lines
             if plot_mode == 'freq_cut':
-                replot_shadow_ilh( ilh, val_freq, xdata_freq, zdata.T,
-                                   color_freq_shadow[ilh], alpha_freq_shadow[ilh] * alpha_scale )
+                replot_shadow_ilh( ilh, val_freq, xdata_time, zdata.T,
+                                   color_freq_shadow[ilh], alpha_freq_shadow[ilh] * alpha_neighbors )
             else:
-                replot_shadow_ilh( ilh, val_time, xdata_time, zdata,
-                                   color_time_shadow[ilh], alpha_time_shadow[ilh] * alpha_scale )
+                replot_shadow_ilh( ilh, val_time, xdata_freq, zdata,
+                                   color_time_shadow[ilh], alpha_time_shadow[ilh] * alpha_neighbors )
 
 def replot_shadow_ilh( ilh, val, xdata, ydata, color, alpha ):
     shadow_list = get_shadow_list( val, num_lower, num_higher )
@@ -162,8 +169,8 @@ def update_marker_color( lo, color ):
     lo.set_markeredgecolor( color )
 
 def reform_axis( ):
-    global linlog
     global plot_mode    
+    global linlog
     if plot_mode == 'time_cut':    
         ax2.axis( axis_freq[linlog] )
         ax2.set_xlabel( 'Freq' )
@@ -203,6 +210,22 @@ def update_num_shadow(num_shadow_all):
         num_lower += hami
         num_higher -= hami
 
+def remake_zdata( zdata0, zscale='linear'):
+    global zdata    
+    if zscale in 'power':
+        zdata = 10.0 * np.log10( zdata0 )
+    elif zscale in 'magnitude':
+        zdata = 20.0 * np.log10( zdata0 )
+    else:
+        zdata = zdata0
+    zmin = np.min(zdata)    
+    zmax = np.max(zdata) * 1.1
+    return zdata, zmin, zmax
+
+def get_scale_freq():
+    return sf / 2 / (zdata.shape[0]-1)
+
+# Other Call Backs
 def sbval_to_idx( val, scale ):
     return int( round( val / scale ) )  # "%.1f" in Slidebar applies unexpected round ...
 
@@ -309,27 +332,35 @@ def read_freq_file( filename ):
 if __name__ == '__main__':
     # make test data
 #    zdata = make_test_data()
-    zdata = read_csv_file('wave2d.csv')
-    print( 'zdata.shape=', zdata.shape )
+    zdata0 = read_csv_file('wave2d.csv')
 #    zdata = read_freq_file('wave2d.csv')
-    num_freq = zdata.shape[0]
-    num_time = zdata.shape[1]
+    print( 'zdata.shape=', zdata0.shape )
+    # Transpose Inpu Data. (time,freq) -> (freq,time)
+    zdata0 = zdata0.T
+    sf = 11025
+
+    num_freq = zdata0.shape[0]
+    num_time = zdata0.shape[1]
     num_cut = { 'freq_cut':num_freq,     # virtical (y)axis
                'time_cut':num_time}      # holizontal (x)axis
-    zdata[50,:] /= 10.0
-    zdata[20,:] /= 10.0
-    zdata[:,40] /= 10.0
-    zdata[:,160] /= 10.0
 
+    # Make notch For Debug    
+    zdata0[:,20] /= 10.0
+    zdata0[:,50] /= 10.0
+    zdata0[160,:] /= 10.0
+    zdata0[40,:] /= 10.0
+    
+    # Remake Input Data and scale parameters
+    zdata, zmin, zmax = remake_zdata( zdata0, zscale='linear')
 #    zlim = [ max(zdata.ravel())*1.1, 10**( np.floor(np.log10(max(zdata.ravel()))) + 1 ) ]
     zmax_log = 10**( np.floor(np.log10(np.max(zdata) ) ) + 1 )
     zmax_lin = np.max(zdata)*1.1
 
-    # time variables
-    val_time0 = 0
-    val_time = val_time0
+    # time cut plot variables
+    val_time = 0
 #    scale_freq = 0.1
-    scale_freq = 100
+    scale_freq = get_scale_freq( )
+    
 #    color_time_light = 'blue'
 #    color_time_light = 'dodgerblue'
     color_time_light = 'navy'
@@ -340,12 +371,12 @@ if __name__ == '__main__':
 #    alpha_time_shadow = [ 0.3, 0.3]
     alpha_time_shadow = [ 1.0, 1.0]
     axis_freq = [ [0, num_freq * scale_freq, 1, zmax_lin ],
-                [0, num_freq * scale_freq, 1, zmax_log ] ]
-    xdata_time = np.arange(0.0, num_freq * scale_freq, scale_freq )
+                  [0, num_freq * scale_freq, 1, zmax_log ] ] # [xmin,xmax,ymin,ymax]
+    xdata_freq = np.arange(0.0, num_freq * scale_freq, scale_freq )
+#    xdata_freq = np.arange(0, num_freq, 1)
 
-    # freq variables
-    val_freq0 = 0
-    val_freq = val_freq0
+    # freq cut plot variables
+    val_freq = 0
 #    color_freq_light = 'green'
 #    color_freq_light = 'mediumspringgreen'
     color_freq_light = 'green'
@@ -357,11 +388,11 @@ if __name__ == '__main__':
 #    alpha_freq_shadow = [ 0.2, 0.4]
     alpha_freq_shadow = [ 1.0, 1.0]
     axis_time = [ [0, num_time, 1, zmax_lin ],
-                 [0, num_time, 1, zmax_log ] ]
-    xdata_freq = np.arange(0, num_time, 1)
+                  [0, num_time, 1, zmax_log ] ]
+    xdata_time = np.arange(0, num_time, 1)
 
     # position line
-    alpha_ax = 1.0
+    alpha_hm = 1.0
     cmap_name='copper'
 #    cmap_name='gray'
 #    cmap_name='pink'
@@ -370,7 +401,7 @@ if __name__ == '__main__':
     plot_mode = 'time_cut'
     num_higher = 0
     num_lower = 0
-    alpha_scale = 1.0
+    alpha_neighbors = 1.0
     linlog = 1 # 0:Linear plot, 1:Semilog plot
     yscale = [ 'linear', 'log']
 
@@ -388,8 +419,8 @@ if __name__ == '__main__':
     im = plt.pcolormesh(X, Y, zdata, snap=True, cmap=cmap_name )
     plt.ylabel('freq')
     plt.xlabel('time')
-    lcuttime = plt.axvline( val_time, color=color_time_light, alpha=alpha_ax )
-    lcutfreq = plt.axhline( val_freq, lw=1, color=color_freq_light, alpha=alpha_ax )
+    lcuttime = plt.axvline( val_time, color=color_time_light, alpha=alpha_hm )
+    lcutfreq = plt.axhline( val_freq, lw=1, color=color_freq_light, alpha=alpha_hm )
     plt.axis( [ X[0,:].min(), X[0,:].max(), Y[:,0].min(), Y[:,0].max() ] )
 
     # Subplot 122
@@ -408,13 +439,13 @@ if __name__ == '__main__':
     axcolor = 'lightgoldenrodyellow'
     axfreq = plt.axes([0.1, 0.05, 0.3, 0.03], facecolor=axcolor)
     axtime = plt.axes([0.1, 0.10, 0.3, 0.03], facecolor=axcolor)
-    axhigher = plt.axes([0.6, 0.05, 0.3, 0.03], facecolor=axcolor)
-    axlower = plt.axes([0.6, 0.10, 0.3, 0.03], facecolor=axcolor)
+    axalpha = plt.axes([0.8, 0.05, 0.15, 0.03], facecolor=axcolor)
+    axnegibors = plt.axes([0.8, 0.10, 0.15, 0.03], facecolor=axcolor)
 
     stime = Slider(axtime, 'time', 0, num_time-1, valinit=val_time, valfmt='%d')
     sfreqf = Slider(axfreq, 'freq', 0.0, (num_freq-1) * scale_freq, valinit=val_freq * scale_freq, valfmt='%.1f')
-    sneighbors = Slider(axlower, '# neighbors', 0, num_time-1, valinit=num_lower, valfmt='%d')
-    salpha = Slider(axhigher, 'alpha', 0, 1, valinit=np.sqrt(alpha_scale), valfmt='%.2f')
+    sneighbors = Slider(axnegibors, '# neighbors', 0, num_time-1, valinit=num_lower, valfmt='%d')
+    salpha = Slider(axalpha, 'alpha', 0, 1, valinit=np.sqrt(alpha_neighbors), valfmt='%.2f')
 
     stime.on_changed(callback_time_cut)
     sfreqf.on_changed(callback_freq_cut )
@@ -427,9 +458,14 @@ if __name__ == '__main__':
 #    button.on_clicked(reset)
 
     # Linear/Log  button
-    linlogax = plt.axes([0.48, 0.05, 0.05, 0.03])
-    button = Button(linlogax, 'Lin/Log', color=axcolor, hovercolor='0.975')
-    button.on_clicked(callback_linlog)
+    axlinlog = plt.axes([0.48, 0.10, 0.05, 0.03])
+    button_linlog = Button(axlinlog, 'Lin/Log', color=axcolor, hovercolor='0.975')
+    button_linlog.on_clicked(callback_linlog)
+
+    # TextBox for Sample Rate
+    axsf = plt.axes([0.48, 0.05, 0.1, 0.03])
+    textbox_sf = TextBox(axsf, 'SF', initial=str(sf), color=axcolor, hovercolor='0.975' )
+    textbox_sf.on_submit(callback_sf)
 
     # Mouse
     drag = False
