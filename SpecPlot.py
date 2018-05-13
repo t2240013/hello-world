@@ -31,7 +31,8 @@ def callback_time_cut(val):
     else:
         replot_shadow( [True, True ] )
         replot_light()
-#        reform_axis( axis_freq[linlog], 'freq_cut')
+
+    reform_axis()
     fig.canvas.draw_idle()
 
 def callback_freq_cut(val):
@@ -60,7 +61,8 @@ def callback_freq_cut(val):
     else:
         replot_shadow( [True, True])
         replot_light()
-#        reform_axis( axis_time[linlog], 'time_cut')
+    
+    reform_axis()
     fig.canvas.draw_idle()
 
 def callback_neighbors(val):
@@ -79,6 +81,7 @@ def callback_linlog(event):
     linlog = (linlog+1)%2
     replot_light()
     replot_shadow( [True, True] )
+    reform_axis()
     fig.canvas.draw_idle()
 
 def update_light():
@@ -86,12 +89,10 @@ def update_light():
         update_line( l2, xdata_freq, zdata.T[:,val_freq] )
         update_color( l2, color_freq_light, alpha_freq_light )
         update_marker_color( l2, color_freq_light )
-#        reform_axis( axis_time[linlog], 'time_cut')
     else:
         update_line( l2, xdata_time, zdata[:,val_time] )
         update_color( l2, color_time_light, alpha_time_light )
         update_marker_color( l2, color_time_light )
-#        reform_axis( axis_freq[linlog], 'freq_cut' )
 
 def update_shadow( replot_flags ):
     for ilh in range(len(replot_flags) ):
@@ -116,12 +117,10 @@ def replot_light( ):
         col = color_freq_light
         l2, = ax2.plot( xdata_freq, zdata[val_freq,:], '-o',
             	color=col, markerfacecolor=col, markeredgecolor=col, lw=1, ms=2 )
-        reform_axis( axis_time[linlog], 'time_cut')
     else:
         col = color_time_light
         l2, = ax2.plot( xdata_time, zdata[:,val_time], '-o',
             	color=col, markerfacecolor=col, markeredgecolor=col, lw=1, ms=2 )
-        reform_axis( axis_freq[linlog], 'freq_cut')
 
     ax2.set_yscale(yscale[linlog])
     l2.set_zorder(200)
@@ -162,9 +161,15 @@ def update_marker_color( lo, color ):
     lo.set_markerfacecolor( color )
     lo.set_markeredgecolor( color )
 
-def reform_axis( axis, label ):
-    ax2.axis( axis )
-    ax2.set_xlabel( label )
+def reform_axis( ):
+    global linlog
+    global plot_mode    
+    if plot_mode == 'time_cut':    
+        ax2.axis( axis_freq[linlog] )
+        ax2.set_xlabel( 'Freq' )
+    else:
+        ax2.axis( axis_time[linlog] )
+        ax2.set_xlabel( 'Time' )
 
 def get_shadow_list( val, num_lower, num_higher ):
     lower_list =  range( max( 0, val - num_lower ), val )
@@ -217,8 +222,10 @@ def onclick_release(event):
 
 def on_key(event):
     if event.key == 'right':
+        print( 'on_key      ', stime.val+1)
         stime.set_val( min( stime.val+1, stime.valmax ) )
     if event.key == 'left':
+        print( 'on_key      ', stime.val-1)
         stime.set_val( max( stime.val-1, stime.valmin ) )
     if event.key == 'up':
         sfreqf.set_val( min(sfreqf.val + scale_freq, sfreqf.valmax) )
@@ -239,6 +246,7 @@ def on_scroll(event):
 
 def update_slider( event ):
     if plot_mode == 'time_cut':
+        print( 'update_slider ', event.xdata )
         stime.set_val( min(event.xdata, stime.valmax) )
     else:
         sfreqf.set_val( min(event.ydata, sfreqf.valmax) )
@@ -321,7 +329,7 @@ if __name__ == '__main__':
     val_time0 = 0
     val_time = val_time0
 #    scale_freq = 0.1
-    scale_freq = 0.2
+    scale_freq = 100
 #    color_time_light = 'blue'
 #    color_time_light = 'dodgerblue'
     color_time_light = 'navy'
