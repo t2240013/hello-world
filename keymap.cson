@@ -31,25 +31,38 @@
 # Atom Flight Manual:
 # http://flight-manual.atom.io/using-atom/sections/basic-customization/#_cson
 #
+
 'atom-text-editor':
   'ctrl-h': 'core:backspace'
   'ctrl-z': 'atomic-emacs:scroll-down'
-  'f4': 'symbols-view:go-to-declaration'
-  'shift-f4': 'symbols-view:return-from-declaration'
+  'ctrl-x ctrl-g': 'core:cancel'  # to avoid delete one line
 #
-  'f12': 'atom-gtags:get-definitions'
-  'shift-f12': 'atom-gtags:nav-back'
+  'f4': 'atom-gtags:get-definitions'
+  'shift-f4': 'atom-gtags:nav-back'
   'f5': 'atom-gtags:get-references'
 
-# For atom-gtags
-#'atom-workspace':
-#  'alt-1': 'atom-gtags:get-definitions'
-#  'alt-2': 'atom-gtags:get-references'
-#  'alt-3': 'atom-gtags:get-symbols-of-file'
-#  'alt-4': 'atom-gtags:lookup-definitions'
-#  'alt-i': 'atom-gtags:single-file-update'
-#  'alt-w': 'atom-gtags:nav-forward'
-#  'alt-q': 'atom-gtags:nav-back'
-#  'alt-.': 'atom-gtags:pre-position'
-#  'alt-,': 'atom-gtags:next-position'
-#  'ctrl-alt-g': 'atom-gtags:toggle'
+'body':
+  'ctrl-n': 'unset!'
+
+### Incremental Search ###
+#'.platform-darwin .workspace .editor:not(.mini)':
+#  'ctrl-s': 'incremental-search:forward'
+#  'ctrl-r': 'incremental-search:backward'
+#
+#'.platform-darwin .workspace .isearch .editor':
+#  'ctrl-s': 'incremental-search:forward'
+#  'ctrl-r': 'incremental-search:backward'
+#  'ctrl-w' : 'incremental-search:slurp'
+
+### Find And Replace ###
+'atom-workspace atom-text-editor':
+  'ctrl-m': 'unset!'
+
+'.platform-win32, .platform-linux':
+  'ctrl-F': 'project-find:toggle'
+
+'.find-and-replace, .results-view':
+  'ctrl-m': 'find-and-replace:toggle'
+
+#'.project-find, .results-view':
+#  'ctrl-m': 'project-find:toggle'
