@@ -6,7 +6,7 @@ from matplotlib.widgets import Slider, Button, TextBox
 import csv
 
 #############################
-###     Sub Functions     ###
+###  Callback Functions   ###
 #############################
 
 def callback_time_cut(val):
@@ -14,10 +14,10 @@ def callback_time_cut(val):
     time virtical axline. pow/mag vs freq (read_freq plot)
     """
     global plot_mode
-    global val_time
+    global idx_time
     last_plot_mode = plot_mode
     plot_mode = 'time_cut'
-    val_time = int(val)
+    idx_time = int(val)
     update_num_shadow(int(sneighbors.val))
     # plot 121
     lcuttime.set_xdata( [val, val] )
@@ -25,7 +25,7 @@ def callback_time_cut(val):
     lcutfreq.set_alpha( 0.0 )
     # plot 122
     if plot_mode == last_plot_mode:
-        replot_flags = get_replot_flag( val_time )
+        replot_flags = get_replot_flag( idx_time ) # [True/False, True/False]
         replot_shadow( replot_flags )
         update_shadow( ~replot_flags )
         update_light()
@@ -33,7 +33,7 @@ def callback_time_cut(val):
         replot_shadow( [True, True ] )
         replot_light()
         reform_axis()
-        update_ticks_format( ax['plot'].xaxis, scale_freq )
+#        update_ticks_format( ax['plot'].xaxis, scale_freq )
 #        reform_ticks()
 
     fig.canvas.draw_idle()
@@ -43,21 +43,21 @@ def callback_freq_cut(val):
     freq holizontal axline. # pow/mag vs time
     """
     global plot_mode
-    global val_bin
+    global idx_freq
     last_plot_mode = plot_mode
     plot_mode = 'freq_cut'
     print( 'scale_freq', scale_freq)
-    val_bin = sbval_to_idx( val, scale_freq )
-    val_freq = val_bin * scale_freq
-    print( 'val val_bin val_freq', val, val_bin, val_freq )
+    idx_freq = freq_to_idx( val, scale_freq )
+    val_freq = idx_freq * scale_freq
+    print( 'val idx_freq val_freq', val, idx_freq, val_freq )
     update_num_shadow(int(sneighbors.val))
     #plot 121
-    lcutfreq.set_ydata( [val_bin, val_bin])
+    lcutfreq.set_ydata( [val_freq, val_freq])
     lcuttime.set_alpha( 0.0 )
     lcutfreq.set_alpha( alpha_hm )
     #plot 122
     if plot_mode == last_plot_mode:
-        replot_flags = get_replot_flag( val_bin )
+        replot_flags = get_replot_flag( idx_freq )
         replot_shadow( replot_flags )
         update_shadow( ~replot_flags )
         update_light()
@@ -65,7 +65,7 @@ def callback_freq_cut(val):
         replot_shadow( [True, True])
         replot_light()
         reform_axis()
-        update_ticks_format( ax['plot'].xaxis, 1.0 )
+#        update_ticks_format( ax['plot'].xaxis, 1.0 )
 #        reform_ticks()
     
     fig.canvas.draw_idle()
@@ -86,64 +86,89 @@ def callback_linlog(event):
 #    global ticks_freq
 #    global ticklabels_freq    
     if linlog == 'linear':
-        linlog = 'log'
+        linlog = 'symlog'
     else:
         linlog = 'linear'
 #    ticks_freq, ticklabels_freq = update_ticks_freq()    
 
-    replot_light()
-    replot_shadow( [True, True] )
+#    replot_light()
+#    replot_shadow( [True, True] )
     reform_axis()
-    update_ticks_format( ax['plot'].xaxis, get_current_scale() )
+#    update_ticks_format( ax['plot'].xaxis, get_current_xscale() )
 #xx   reform_ticks()
+    replot_heat()
+
     fig.canvas.draw_idle()
 
 def callback_sf(text):
     global sf
-    global scale_freq
-#    global ticks_freq
-#    global ticklabels_freq    
+    global scale_freq   
     global ax
     global sval_freq
+    global xdata_freq
+    global view_freq
 
     sf = eval(text)
     print( 'sf ', sf)
     scale_freq = get_scale_freq()
 #    ticks_freq, ticklabels_freq = update_ticks_freq()    
-    update_ticks_format( ax['heat'].yaxis, scale_freq )
-    update_ticks_format( ax['plot'].xaxis, get_current_scale() )
+#    update_ticks_format( ax['heat'].yaxis, scale_freq )
+#    update_ticks_format( ax['plot'].xaxis, get_current_xscale() )
+    xdata_freq = np.arange(0, num_freq, 1) * scale_freq
+    print( xdata_freq[-1])        
+    view_freq = get_view_freq()
     
+    replot_shadow( [True, True])
+    replot_light()
+    reform_axis()
+    
+    replot_heat()
+
     ax['freq'].remove()
     ax['freq'], sval_freq = make_freq_slider()
     
-    reform_axis()
 #    reform_ticks()
     fig.canvas.draw_idle()
 
+############################
+# Replot support functions #
+############################
 def update_light():
     if plot_mode == 'freq_cut':
-        update_line( l2, xdata_time, zdata.T[:,val_bin] )
+        update_line( l2, xdata_time, zdata.T[:,idx_freq] )
         update_color( l2, color_freq_light, alpha_freq_light )
         update_marker_color( l2, color_freq_light )
     else:
-        update_line( l2, xdata_freq, zdata[:,val_time] )
+        update_line( l2, xdata_freq, zdata[:,idx_time] )
         update_color( l2, color_time_light, alpha_time_light )
         update_marker_color( l2, color_time_light )
 
+#def update_shadow( replot_flags ):
+#    for ilh in range(len(replot_flags) ):
+#        if replot_flags[ilh]:
+#            if plot_mode == 'freq_cut':
+#                update_shadow_ilh( ilh, idx_freq, xdata_time, zdata.T )
+#            else:
+#                update_shadow_ilh( ilh, idx_time, xdata_freq, zdata )
 def update_shadow( replot_flags ):
-    for ilh in range(len(replot_flags) ):
-        if replot_flags[ilh]:
+    for i, need_replot in enumerate(replot_flags):
+        if need_replot:
             if plot_mode == 'freq_cut':
-                update_shadow_ilh( ilh, val_bin, xdata_time, zdata.T )
+                update_shadow_ilh( i, idx_freq, xdata_time, zdata.T )
             else:
-                update_shadow_ilh( ilh, val_time, xdata_freq, zdata )
+                update_shadow_ilh( i, idx_time, xdata_freq, zdata )
 
-def update_shadow_ilh( ilh, val, xdata, ydata ):
-    shadow_list = get_shadow_list( val, num_lower, num_higher )
+def update_shadow_ilh( ilh, index_light, xdata, ydata ):
+    '''
+    update line object substituting current xdata/ydata with new ones
+    IN:  ilh         : 0:lower, 1:hiher
+         index_light : index of main line (light)
+    '''
+    shadow_list = get_shadow_list( index_light, num_lower, num_higher )
     if shadow_list[ilh]:
-        for ( lval, lo ) in zip( shadow_list[ilh], l2shadow[ilh] ):
+        for ( idx, lo ) in zip( shadow_list[ilh], l2shadow[ilh] ):
 #            print plot_mode, val, lo
-            update_line( lo, xdata, ydata[:,lval] )
+            update_line( lo, xdata, ydata[:,idx] )
 
 def replot_light( ):
     global l2
@@ -151,11 +176,11 @@ def replot_light( ):
         l2.remove()
     if plot_mode == 'freq_cut':
         col = color_freq_light
-        l2, = ax['plot'].plot( xdata_time, zdata[val_bin,:], '-o',
+        l2, = ax['plot'].plot( xdata_time, zdata[idx_freq,:], '-o',
             	color=col, markerfacecolor=col, markeredgecolor=col, lw=1, ms=2 )
     else:
         col = color_time_light
-        l2, = ax['plot'].plot( xdata_freq, zdata[:,val_time], '-o',
+        l2, = ax['plot'].plot( xdata_freq, zdata[:,idx_time], '-o',
             	color=col, markerfacecolor=col, markeredgecolor=col, lw=1, ms=2 )
 
 ##??    ax['plot'].set_xscale(linlog)
@@ -173,10 +198,10 @@ def replot_shadow( replot_flags ):
                 l2shadow[ilh] = []
             # Write new lines
             if plot_mode == 'freq_cut':
-                replot_shadow_ilh( ilh, val_bin, xdata_time, zdata.T,
+                replot_shadow_ilh( ilh, idx_freq, xdata_time, zdata.T,
                                    color_freq_shadow[ilh], alpha_freq_shadow[ilh] * alpha_neighbors )
             else:
-                replot_shadow_ilh( ilh, val_time, xdata_freq, zdata,
+                replot_shadow_ilh( ilh, idx_time, xdata_freq, zdata,
                                    color_time_shadow[ilh], alpha_time_shadow[ilh] * alpha_neighbors )
 
 def replot_shadow_ilh( ilh, val, xdata, ydata, color, alpha ):
@@ -184,6 +209,30 @@ def replot_shadow_ilh( ilh, val, xdata, ydata, color, alpha ):
     if shadow_list[ilh]:
         l2shadow[ilh] = ax['plot'].plot( xdata, ydata[:,shadow_list[ilh]], '-', color=color, lw=1, alpha=alpha )
 
+def replot_heat():
+    global lcuttime
+    global lcutfreq
+    global im    
+
+    if im:
+        im.remove()
+        lcuttime.remove()
+        lcutfreq.remove()
+    
+    print( xdata_freq[-1])        
+    
+    X,Y = np.meshgrid( xdata_time, xdata_freq )
+    im = ax['heat'].pcolormesh(X, Y, zdata, snap=True, cmap=cmap_name )
+    if plot_mode is 'freq_cut':
+        alpha_vl = 0
+        alpha_hl = alpha_hm
+    else:
+        alpha_vl = alpha_hm
+        alpha_hl = 0
+    lcuttime = ax['heat'].axvline( idx_time, color=color_time_light, alpha=alpha_vl )
+    lcutfreq = ax['heat'].axhline( idx_freq * scale_freq, lw=1, color=color_freq_light, alpha=alpha_hl )
+    ax['heat'].set_yscale(linlog)    
+    ax['heat'].axis( [ xdata_time.min(), xdata_time.max(), xdata_freq.min(), xdata_freq.max() ] ) # Set min/max values for each axis
 
 def update_line( lo, xdata, ydata ):
     lo.set_xdata( xdata )
@@ -216,7 +265,7 @@ def update_ticks_format( axis, scale ):
         scale : actual value per bin
     """
     axis.set_major_formatter( ticker.FuncFormatter( lambda x,pos: "%d" % (x*scale+0.5)) )
-    if linlog == 'log':
+    if linlog != 'linear':
         grid = np.arange(np.log10(sf/2))[2:]
         locs = 10**grid/scale_freq
         axis.set_major_locator(ticker.FixedLocator(locs))
@@ -248,19 +297,22 @@ def reform_axis( ):
     global linlog
     ax['plot'].set_xscale(linlog)
     if plot_mode == 'time_cut':    
-        ax['plot'].axis( axis_freq )
+        ax['plot'].axis( view_freq )
         ax['plot'].set_xlabel( 'Freq' )
     else:
-        ax['plot'].axis( axis_time )
+        ax['plot'].axis( view_time )
         ax['plot'].set_xlabel( 'Time' )
 
-def get_shadow_list( val, num_lower, num_higher ):
-    lower_list =  range( max( 0, val - num_lower ), val )
-    higher_list =  range( val+1, min( num_cut[plot_mode], val + 1 + num_higher ) )
-    return  [ lower_list, higher_list ]
+def get_shadow_list( index_light, num_lower, num_higher ):
+    index_lower =  range( max( 0, index_light - num_lower ), index_light )
+    index_higher =  range( index_light+1, min( num_neighbors[plot_mode], index_light + 1 + num_higher ) )
+    return  [ index_lower, index_higher ]
 
-def get_replot_flag( val ):
-    shadow_list = get_shadow_list( val, num_lower, num_higher )
+def get_replot_flag( index_light ):
+    '''
+    Check lower and higher shadow at least one exist and return True/False respectively
+    '''
+    shadow_list = get_shadow_list( index_light, num_lower, num_higher )
     flags = []
     for ilh in range(len(l2shadow) ):
         if len(l2shadow[ilh]) == len(shadow_list[ilh]):
@@ -274,10 +326,10 @@ def update_num_shadow(num_shadow_all):
     global num_lower
     global num_higher
     if plot_mode == 'freq_cut':
-        val = val_bin
+        val = idx_freq
         val_max = num_freq - 1
     else:
-        val = val_time
+        val = idx_time
         val_max = num_time - 1
     num_lower = min( val, int(num_shadow_all/2) )
     num_higher = num_shadow_all - num_lower
@@ -309,29 +361,24 @@ def get_scale_freq():
     """
     Get frequency per bin
     """
-    return sf / 2 / (zdata.shape[0]-1)
-
-def get_current_scale():
-    """
-    Get Current value per bin
-    """
-    if plot_mode == 'time_cut':
-        scale = get_scale_freq()
-    else:
-        scale = 1.0 
-    return scale
+#    return sf / 2 / (zdata.shape[0]-1)
+    return sf / 2 / (num_freq-1)
 
 def make_freq_slider():
     ax['freq'] = plt.axes([0.1, 0.05, 0.3, 0.03], facecolor=axcolor)
-    sval_freq = Slider(ax['freq'], 'freq', 0.0, (num_freq-1) * scale_freq, valinit=val_bin * scale_freq, valfmt='%.1f')
+    sval_freq = Slider(ax['freq'], 'freq', 0.0, (num_freq-1) * scale_freq, valinit=idx_freq * scale_freq, valfmt='%.1f')
     sval_freq.on_changed(callback_freq_cut )
     return ax['freq'], sval_freq
 
-def sbval_to_idx( val, scale ):
-    return int( round( val / scale ) )  # "%.1f" in Slidebar applies unexpected round ...
+def freq_to_idx( freq, scale ):
+    return int( round( freq / scale ) )  # "%.1f" in Slidebar applies unexpected round ...
 
-# Other Call Backs
+def get_view_freq():
+    return [ 6, sf/2, 1, zmax*1.1 ]
 
+####################
+# Other Call Backs #
+####################
 def onclick_motion(event):
     if ( drag == True ) and ( ax['heat'] == event.inaxes ) :
         update_slider( event )
@@ -381,7 +428,7 @@ def update_slider( event ):
         print( 'update_slider ', event.xdata )
         stime.set_val( min(event.xdata, stime.valmax) )
     else:
-        sval_freq.set_val( min(event.ydata, sval_freq.valmax) * scale_freq )
+        sval_freq.set_val( min(event.ydata, sval_freq.valmax) )
 
 def reset(event):
     global plot_mode
@@ -439,7 +486,9 @@ def read_freq_file( filename ):
 ###        Main         ###
 ###########################
 if __name__ == '__main__':
-    # Parameter
+    ##############    
+    # Parameter  #
+    ##############
     sf = 11025
     plot_mode = 'time_cut'
     num_higher = 0
@@ -448,17 +497,21 @@ if __name__ == '__main__':
     linlog = 'linear'
 #    yscale = [ 'linear', 'log']
     
+    ############
+    #   Data   #    
+    ############
     # make test data
 #    zdata = make_test_data()
-    zdata0 = read_csv_file('wave2d.csv')
+    zdata0 = read_csv_file('wave2d.csv') # (time,freq)
 #    zdata = read_freq_file('wave2d.csv')
     print( 'zdata.shape=', zdata0.shape )
-    # Transpose Inpu Data. (time,freq) -> (freq,time)
-    zdata0 = zdata0.T
 
-    num_freq = zdata0.shape[0]
-    num_time = zdata0.shape[1]
-    num_cut = { 'freq_cut':num_freq,     # virtical (y)axis
+    # Transpose Inpu Data
+    zdata0 = zdata0.T # (freq,time)
+
+    num_freq = zdata0.shape[0] # num of freq
+    num_time = zdata0.shape[1] # num of time
+    num_neighbors = { 'freq_cut':num_freq,     # virtical (y)axis
                'time_cut':num_time}      # holizontal (x)axis
 
     # Make notch For Debug    
@@ -470,13 +523,13 @@ if __name__ == '__main__':
     # Remake Input Data Pow/Mag/Linar
     zdata, zmin, zmax = remake_zdata( zdata0, zscale='linear')
 #    zlim = [ max(zdata.ravel())*1.1, 10**( np.floor(np.log10(max(zdata.ravel()))) + 1 ) ]
-    zmax_log = 10**( np.floor(np.log10(zmax ) ) + 1 )
-    zmax_lin = np.max(zdata)*1.1
+#    zmax_log = 10**( np.floor(np.log10(zmax ) ) + 1 )
+#    zmax_lin = np.max(zdata)*1.1
 
-    # time cut plot variables
-    val_time = 0
-#    scale_freq = 0.1
     scale_freq = get_scale_freq( )
+    ###########################
+    # time cut plot variables
+    ###########################
     
 #    color_time_light = 'blue'
 #    color_time_light = 'dodgerblue'
@@ -487,14 +540,19 @@ if __name__ == '__main__':
     alpha_time_light = 1.0
 #    alpha_time_shadow = [ 0.3, 0.3]
     alpha_time_shadow = [ 1.0, 1.0]
-#    axis_freq = [ [0, num_freq, 1, zmax_lin ],
+
+
+#    view_freq = [ [0, num_freq, 1, zmax_lin ],
 #                  [0, num_freq, 1, zmax_log ] ] # [xmin,xmax,ymin,ymax]
 #    xdata_freq = np.arange(0.0, num_freq * scale_freq, scale_freq )
-    axis_freq = [ 0, num_freq, 1, zmax*1.1 ]
-    xdata_freq = np.arange(0, num_freq, 1)
+#    view_freq = [ 0, num_freq, 1, zmax*1.1 ]
+    view_freq = get_view_freq()
+    #xdata_freq = np.arange(0, num_freq, 1)
+    xdata_freq = np.arange(0, num_freq, 1) * scale_freq
 
-    # freq cut plot variables
-    val_bin = 0
+    ###########################
+    # freq cut plot variables #
+    ###########################
 #    color_freq_light = 'green'
 #    color_freq_light = 'mediumspringgreen'
     color_freq_light = 'green'
@@ -505,19 +563,25 @@ if __name__ == '__main__':
     alpha_freq_light = 1.0
 #    alpha_freq_shadow = [ 0.2, 0.4]
     alpha_freq_shadow = [ 1.0, 1.0]
-#    axis_time = [ [0, num_time, 1, zmax_lin ],
+#    view_time = [ [0, num_time, 1, zmax_lin ],
 #                  [0, num_time, 1, zmax_log ] ]
-    axis_time = [ 0, num_time, 1, zmax*1.1 ]
+    view_time = [ 0, num_time, 1, zmax*1.1 ]
     xdata_time = np.arange(0, num_time, 1)
 
+    ###########################
+    # Heat Map variables
+    ###########################
+    idx_time = 0
+    idx_freq = 0
     # position line
     alpha_hm = 1.0
     cmap_name='copper'
 #    cmap_name='gray'
 #    cmap_name='pink'
 
-    # Setup plot space
-#    fig = plt.figure(figsize=[14,7])
+    ##############
+    # Start Plot #
+    ##############
     fig = plt.figure(figsize=[12,7])
 #    plt.subplots_adjust( bottom=0.20 )
 
@@ -525,17 +589,27 @@ if __name__ == '__main__':
 
     # Subplot 121
     ax['heat'] = plt.subplot(121)
-    X,Y = np.meshgrid( range(zdata.shape[1]+1), range(zdata.shape[0]+1) )
+    '''
+#    X,Y = np.meshgrid( range(zdata.shape[1]+1), range(zdata.shape[0]+1) )
+    X,Y = np.meshgrid( xdata_time, xdata_freq )
 ##    Y = Y * scale_freq
 #    im = plt.imshow(zdata, aspect='auto', origin='lowier', interpolation='none', cmap=cm.get_cmap(name=cmap_name) )
 #    im = plt.pcolormesh(X, Y, zdata, snap=True, cmap=cm.get_cmap(name=cmap_name) )
     im = plt.pcolormesh(X, Y, zdata, snap=True, cmap=cmap_name )
+
     plt.ylabel('freq')
     plt.xlabel('time')
-    lcuttime = plt.axvline( val_time, color=color_time_light, alpha=alpha_hm )
-    lcutfreq = plt.axhline( val_bin, lw=1, color=color_freq_light, alpha=alpha_hm )
-    plt.axis( [ X[0,:].min(), X[0,:].max(), Y[:,0].min(), Y[:,0].max() ] ) # Set min/max values for each axis
-    update_ticks_format( ax['heat'].yaxis, scale_freq )
+    plt.yscale(linlog)    
+    lcuttime = plt.axvline( idx_time, color=color_time_light, alpha=alpha_hm )
+    lcutfreq = plt.axhline( idx_freq, lw=1, color=color_freq_light, alpha=alpha_hm )
+    plt.axis( [ xdata_time.min(), xdata_time.max(), xdata_freq.min(), xdata_freq.max() ] ) # Set min/max values for each axis
+#    plt.axis( [ X[0,:].min(), X[0,:].max(), Y[:,0].min(), Y[:,0].max() ] ) # Set min/max values for each axis
+#    update_ticks_format( ax['heat'].yaxis, scale_freq )
+    '''
+    im = []
+    replot_heat()    
+    plt.ylabel('freq')
+    plt.xlabel('time')
 
     # Subplot 122
     ax['plot'] = plt.subplot(122)
@@ -545,10 +619,10 @@ if __name__ == '__main__':
     replot_light( )
     plt.grid(which='major',color='gray',linestyle='-')
     plt.grid(which='minor',color='gray',linestyle='--', alpha=0.3)
-    plt.axis( axis_freq )
+    plt.axis( view_freq )
     plt.ylabel('Pow/Mag')
     plt.xlabel('freq')
-    update_ticks_format( ax['plot'].xaxis, scale_freq )
+#    update_ticks_format( ax['plot'].xaxis, scale_freq )
 #    ticks_freq, ticklabels_freq = update_ticks_freq()    
 #    reform_ticks()
 
@@ -560,8 +634,8 @@ if __name__ == '__main__':
     ax['alpha'] = plt.axes([0.8, 0.05, 0.15, 0.03], facecolor=axcolor)
     ax['neighbors'] = plt.axes([0.8, 0.10, 0.15, 0.03], facecolor=axcolor)
 
-    stime = Slider(ax['time'], 'time', 0, num_time-1, valinit=50+val_time, valfmt='%d')
-#    sval_freq = Slider(ax['freq'], 'freq', 0.0, (num_freq-1) * scale_freq, valinit=val_bin * scale_freq, valfmt='%.1f')
+    stime = Slider(ax['time'], 'time', 0, num_time-1, valinit=50+idx_time, valfmt='%d')
+#    sval_freq = Slider(ax['freq'], 'freq', 0.0, (num_freq-1) * scale_freq, valinit=idx_freq * scale_freq, valfmt='%.1f')
     sneighbors = Slider(ax['neighbors'], '# neighbors', 0, num_time-1, valinit=num_lower, valfmt='%d')
     salpha = Slider(ax['alpha'], 'alpha', 0, 1, valinit=np.sqrt(alpha_neighbors), valfmt='%.2f')
 
