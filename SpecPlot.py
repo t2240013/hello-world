@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -208,8 +209,10 @@ def replot_heat():
     lcuttime = ax['heat'].axvline( idx_time, color=color_time_light, alpha=alpha_vl )
     lcutfreq = ax['heat'].axhline( idx_freq * scale_freq, lw=1, color=color_freq_light, alpha=alpha_hl )
     ax['heat'].set_yscale(linlog)    
-    ax['heat'].axis( [ xdata_time.min(), xdata_time.max(), xdata_freq.min(), xdata_freq.max() ] ) # Set min/max values for each axis
-
+    vf = get_view_freq()
+    view_heat = [ xdata_time.min(), xdata_time.max(), vf[0], vf[1] ]
+    ax['heat'].axis( view_heat  ) # Set min/max values for each axis
+    
 def update_line( lo, xdata, ydata ):
     lo.set_xdata( xdata )
     lo.set_ydata( ydata )
@@ -328,7 +331,7 @@ def freq_to_idx( freq, scale ):
     return int( round( freq / scale ) )  # "%.1f" in Slidebar applies unexpected round ...
 
 def get_view_freq():
-    return [ 6, sf/2, 1, zmax*1.1 ]
+    return [ 10, sf/2, 1, zmax*1.1 ]
 
 ####################
 # Other Call Backs #
@@ -431,7 +434,20 @@ if __name__ == '__main__':
     ############
     # make test data
 #    zdata = make_test_data()
-    zdata0 = read_csv_file('wave2d.csv') # (time,freq)
+    if len(sys.argv) <= 1:
+        print( "usage: %s datafile.{csv,npy}" % (sys.argv[0] ) )
+        sys.exit()
+    else:
+        ext = sys.argv[1].split('.')[-1]
+        if  ext == 'csv':
+            #zdata0 = read_csv_file('wave2d.csv') # (time,freq)
+            zdata0 = read_csv_file(sys.argv[1]) # (time,freq)
+        elif ext == 'npy':
+            zdata0 = np.load( sys.argv[1] ) # (time,freq)
+        else:
+            print( "error: invalid data format\nusage: %s datafile.{csv,npy}" % ( sys.argv[0]) )
+            sys.exit()
+
     print( 'zdata.shape=', zdata0.shape )
 
     # Transpose Inpu Data
