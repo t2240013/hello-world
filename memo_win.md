@@ -44,9 +44,16 @@
 ## キーボードの設定
 * 106キーボードを英語にする。
 http://qiita.com/shimizu14/items/000cceb9e72a492b9176
-* かな漢対応
+* かな漢対応(IMEの設定)
   * 変換キーの設定
   * かなモードで半角スペース
+
+* US配列で変換/無変換を有効にする  
+http://uchanote.blogspot.com/2015/08/us-ime-onoff.html
+  * AX配列に変更した後に、Scancode を追加する
+
+    5B,00,79,00 : 79 (JP henkan) -> 5B    
+    5A,00,7B,00 : 7B (JP muhenkan) -> 5A
 
 ## xyzzy
 * 設定変更
