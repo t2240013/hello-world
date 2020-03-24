@@ -19,7 +19,8 @@ Freq = 1000
 FreqStep = 10
 GaindB = 0.0
 GainLn0 = 1.0
-PlayCh = np.array( [ 1, 1 ] )
+Duration = 0.5
+PlayCh = np.array( [ 1, 0 ] )
 PlayObj = None
 
 #############################
@@ -46,13 +47,20 @@ def set_0dB(event):
         textbox_gain.set_val(str(GaindB))
     print( GainLn0 )
 
-def set_Hz(text):
+def set_freq(text):
     global Freq
     Freq = eval(text)
 
 def set_gain(text):
     global GaindB
     GaindB = eval(text)
+
+def set_duration(text):
+    global Duration
+    Duration = eval(text)
+    if Duration > 100:
+        Duration = 100
+    textbox_duration.set_val(str(Duration))
 
 def dB_up(event):
     global GaindB
@@ -98,7 +106,9 @@ def onclick_release(event):
     return
 
 def on_key(event):
-    print( event.key )
+    #print( event.key )
+    if event.key == " ":
+        restart_playing()
 
 def on_scroll(event):
     global Freq
@@ -158,7 +168,7 @@ def start_playing():
     if ( gain < GAIN_MIN ) or ( gain > GAIN_MAX ):
         print( 'invalid gain= ', gain)
     else:
-        data = mkpee( gain, 0.5, PlayCh, Freq, FS )
+        data = mkpee( gain, Duration, PlayCh, Freq, FS )
         print( 'start: gain=%f (%d) freq=%d max=%d' % (gain, GaindB, Freq, np.max(data)) )
         PlayObj = sa.play_buffer( data, 2, 2, FS )
 
@@ -201,12 +211,12 @@ if __name__ == '__main__':
     button_set_0dB.on_clicked(set_0dB)
 
     # Start/Stop button
-    ax['start'] = plt.axes([0.8, 0.65, 0.2, 0.1]) # [left, buttom, width, hight ]
+    ax['start'] = plt.axes([0.8, 0.65, 0.15, 0.1]) # [left, buttom, width, hight ]
     button_start = Button(ax['start'], 'Start/Stop', color=axcolor, hovercolor='0.975')
     button_start.on_clicked(start_stop)
 
     # Freq Step Select
-    ax['freq_step'] = plt.axes([0.6, 0.65, 0.1, 0.3], facecolor=axcolor)
+    ax['freq_step'] = plt.axes([0.55, 0.6, 0.2, 0.3], facecolor=axcolor)
     radio_freq_step = RadioButtons(ax['freq_step'], ('x10','x100','x1000' ) )
     radio_freq_step.on_clicked(freq_step)
 
@@ -215,7 +225,14 @@ if __name__ == '__main__':
     textbox_Hz = TextBox(ax['freq'], 'Freq(Hz) ', initial=str(Freq), color=axcolor, hovercolor='0.975' )
     textbox_Hz.label.set_fontsize(20)
     textbox_Hz.text_disp.set_fontsize(20)
-    textbox_Hz.on_submit(set_Hz)
+    textbox_Hz.on_submit(set_freq)
+
+    # TextBox duration (sec)
+    ax['duration'] = plt.axes([0.2, 0.5, 0.3, 0.1])
+    textbox_duration = TextBox(ax['duration'], 'Duration(sec) ', initial=str(Duration), color=axcolor, hovercolor='0.975' )
+    textbox_duration.label.set_fontsize(20)
+    textbox_duration.text_disp.set_fontsize(20)
+    textbox_duration.on_submit(set_duration)
 
     # TextBox for Gain
     ax['gain'] = plt.axes([0.2, 0.15, 0.3, 0.25])
@@ -225,12 +242,12 @@ if __name__ == '__main__':
     textbox_gain.on_submit(set_gain)
 
     # dB Up button
-    ax['dB_up'] = plt.axes([0.6, 0.3, 0.1, 0.1])
+    ax['dB_up'] = plt.axes([0.55, 0.3, 0.1, 0.1])
     button_dB_up = Button(ax['dB_up'], '+', color=axcolor, hovercolor='0.975')
     button_dB_up.on_clicked(dB_up)
 
     # dB Down button
-    ax['dB_down'] = plt.axes([0.6, 0.15, 0.1, 0.1])
+    ax['dB_down'] = plt.axes([0.55, 0.15, 0.1, 0.1])
     button_dB_down = Button(ax['dB_down'], '-', color=axcolor, hovercolor='0.975')
     button_dB_down.on_clicked(dB_down)
 
