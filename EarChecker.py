@@ -116,12 +116,14 @@ def on_scroll(event):
     print( event.step )
     if ax['freq'] == event.inaxes:
         Freq += event.step * FreqStep
-        Freq = dual_clip( Freq, 10, FS/2 )
+        Freq = dual_clip( Freq, 0, FS/2 )
         textbox_Hz.set_val(str(Freq))
+        textbox_Hz.text_disp.set_size(15)
     if ax['gain'] == event.inaxes:
         GaindB += event.step
         textbox_gain.set_val(str(GaindB))
-    restart_playing()
+        textbox_gain.text_disp.set_size(15)
+    #restart_playing()
 
 ############################
 # Support Functions #
@@ -211,7 +213,7 @@ if __name__ == '__main__':
     button_set_0dB.on_clicked(set_0dB)
 
     # Start/Stop button
-    ax['start'] = plt.axes([0.8, 0.65, 0.15, 0.1]) # [left, buttom, width, hight ]
+    ax['start'] = plt.axes([0.55, 0.45, 0.15, 0.1]) # [left, buttom, width, hight ]
     button_start = Button(ax['start'], 'Start/Stop', color=axcolor, hovercolor='0.975')
     button_start.on_clicked(start_stop)
 
@@ -223,22 +225,22 @@ if __name__ == '__main__':
     # TextBox for Hz
     ax['freq'] = plt.axes([0.2, 0.65, 0.3, 0.25])
     textbox_Hz = TextBox(ax['freq'], 'Freq(Hz) ', initial=str(Freq), color=axcolor, hovercolor='0.975' )
-    textbox_Hz.label.set_fontsize(20)
-    textbox_Hz.text_disp.set_fontsize(20)
+    textbox_Hz.label.set_size(20)
+    textbox_Hz.text_disp.set_size(15)
     textbox_Hz.on_submit(set_freq)
 
     # TextBox duration (sec)
     ax['duration'] = plt.axes([0.2, 0.5, 0.3, 0.1])
     textbox_duration = TextBox(ax['duration'], 'Duration(sec) ', initial=str(Duration), color=axcolor, hovercolor='0.975' )
-    textbox_duration.label.set_fontsize(20)
-    textbox_duration.text_disp.set_fontsize(20)
+    textbox_duration.label.set_size(20)
+    textbox_duration.text_disp.set_size(15)
     textbox_duration.on_submit(set_duration)
 
     # TextBox for Gain
     ax['gain'] = plt.axes([0.2, 0.15, 0.3, 0.25])
     textbox_gain = TextBox(ax['gain'], 'Gain(dB) ', initial=str(GaindB), color=axcolor, hovercolor='0.975' )
-    textbox_gain.label.set_fontsize(20)
-    textbox_gain.text_disp.set_fontsize(20)
+    textbox_gain.label.set_size(20)
+    textbox_gain.text_disp.set_size(15)
     textbox_gain.on_submit(set_gain)
 
     # dB Up button
