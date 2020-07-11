@@ -49,7 +49,11 @@ http://qiita.com/shimizu14/items/000cceb9e72a492b9176
   * かなモードで半角スペース
 
 * US配列で変換/無変換を有効にする  
+https://www.atmarkit.co.jp/ait/articles/0001/26/news001.html
+https://bsakatu.net/doc/ax-layout-on-windows/
 http://uchanote.blogspot.com/2015/08/us-ime-onoff.html
+
+
   * AX配列に変更した後に、Scancode を追加する
 
     5B,00,79,00 : 79 (JP henkan) -> 5B    
